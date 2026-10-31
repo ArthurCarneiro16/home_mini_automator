@@ -1,0 +1,5 @@
+fastapi>=0.110.0
+uvicorn[standard]>=0.28.0
+python-dotenv>=1.0.1
+pydantic-settings>=2.2.1
+pychromecast>=14.0.0
