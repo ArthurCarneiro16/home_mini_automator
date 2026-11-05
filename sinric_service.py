@@ -1,41 +1,52 @@
 import asyncio
+import json
+from pathlib import Path
+
 from sinricpro import SinricPro, SinricProDimSwitch, SinricProConfig
 from config import settings
 from commands import executar_acao
 
-# brilho -> (comando do commands.py, nome do app)
-NIVEIS_APPS = {
-    10: ("abrir_valorant", "o Valorant"),
-    20: ("abrir_league", "o League of Legends"),
-    30: ("abrir_brave", "o Brave"),
-    40: ("abrir_brave_anonimo", "o Brave anônimo"),
-    50: ("abrir_vscode", "o VS Code"),
-    60: ("abrir_steam", "a Steam"),
-    70: ("abrir_notepad", "o bloco de notas"),
-    80: ("abrir_whatsapp", "o WhatsApp"),
-    90: ("abrir_spotify", "o Spotify"),
-}
+ARQUIVO_NIVEIS = Path(__file__).parent / "niveis.json"
 
 
-async def _rodar(comando: str, nome: str) -> bool:
+def ler_niveis() -> dict:
+    """Lê as porcentagens salvas (comando -> número). Lê toda vez, então
+    mudar no painel vale na hora, sem reiniciar o servidor."""
+    try:
+        return json.loads(ARQUIVO_NIVEIS.read_text(encoding="utf-8"))
+    except Exception as e:
+        print(f"Não consegui ler o niveis.json: {e}")
+        return {}
+
+
+async def _rodar(comando: str) -> bool:
     resultado = await asyncio.to_thread(executar_acao, comando)
-    if resultado["status"] != "sucesso":
+    if resultado["status"] == "sucesso":
         print(resultado["mensagem"])
-        return False
-    return True
+        return True
+    print(resultado["mensagem"])
+    return False
 
 
 def _criar_dimmer(device_id: str) -> SinricProDimSwitch:
     async def ao_mudar_nivel(*args) -> bool:
         nivel = int(args[-1])
         print(f"Nível recebido do Google: {nivel}")
-        for numero, (comando, nome) in NIVEIS_APPS.items():
-            if abs(nivel - numero) <= 4:
-                return await _rodar(comando, nome)
-        print(f"Nível {nivel} não está cadastrado")
+
+        if nivel <= 0:
+            return await _rodar("desligar_pc")
+
+        for comando, numero in ler_niveis().items():
+            if abs(nivel - int(numero)) <= 2:
+                return await _rodar(comando)
+
+        print("Esse número não está cadastrado")
         return False
 
     async def aceitar_estado(*args) -> bool:
+        # "desligar o PC" chega como estado False
+        if args and args[-1] is False:
+            return await _rodar("desligar_pc")
         return True
 
     dispositivo = SinricProDimSwitch(device_id)

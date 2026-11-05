@@ -3,3 +3,4 @@ uvicorn
 pydantic-settings
 pychromecast
 sinricpro==5.3.2
+customtkinter

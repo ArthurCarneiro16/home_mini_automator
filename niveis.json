@@ -1,0 +1,12 @@
+{
+  "abrir_valorant": 10,
+  "abrir_league": 20,
+  "abrir_brave": 30,
+  "abrir_brave_anonimo": 40,
+  "abrir_vscode": 50,
+  "abrir_spotify": 90,
+  "abrir_steam": 60,
+  "abrir_notepad": 70,
+  "abrir_whatsapp": 80,
+  "app_claude": 65
+}
