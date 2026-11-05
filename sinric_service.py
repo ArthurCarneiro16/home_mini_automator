@@ -2,9 +2,8 @@ import asyncio
 from sinricpro import SinricPro, SinricProDimSwitch, SinricProConfig
 from config import settings
 from commands import executar_acao
-from cast_service import falar_no_mini
 
-# brilho -> (comando do commands.py, nome que o Mini fala se der erro)
+# brilho -> (comando do commands.py, nome do app)
 NIVEIS_APPS = {
     10: ("abrir_valorant", "o Valorant"),
     20: ("abrir_league", "o League of Legends"),
@@ -18,18 +17,12 @@ NIVEIS_APPS = {
 }
 
 
-def _falar_sem_esperar(texto: str) -> None:
-    asyncio.get_running_loop().run_in_executor(None, falar_no_mini, texto)
-
-
 async def _rodar(comando: str, nome: str) -> bool:
     resultado = await asyncio.to_thread(executar_acao, comando)
-    if resultado["status"] == "sucesso":
-        _falar_sem_esperar("Abrindo")
-        return True
-    print(resultado["mensagem"])
-    _falar_sem_esperar(f"Não consegui abrir {nome}")
-    return False
+    if resultado["status"] != "sucesso":
+        print(resultado["mensagem"])
+        return False
+    return True
 
 
 def _criar_dimmer(device_id: str) -> SinricProDimSwitch:
@@ -39,7 +32,7 @@ def _criar_dimmer(device_id: str) -> SinricProDimSwitch:
         for numero, (comando, nome) in NIVEIS_APPS.items():
             if abs(nivel - numero) <= 4:
                 return await _rodar(comando, nome)
-        _falar_sem_esperar("Esse número não está cadastrado")
+        print(f"Nível {nivel} não está cadastrado")
         return False
 
     async def aceitar_estado(*args) -> bool:

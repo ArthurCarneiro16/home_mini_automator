@@ -11,9 +11,10 @@ from sinric_service import iniciar_sinric
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # conecta no Mini em segundo plano, sem atrasar a subida do servidor
-    asyncio.get_running_loop().run_in_executor(None, preparar_mini)
+    loop = asyncio.get_running_loop()
+    await loop.run_in_executor(None, preparar_mini)
     await iniciar_sinric()
+    loop.run_in_executor(None, falar_no_mini, "Servidor ligado")
     yield
 
 
@@ -57,13 +58,11 @@ def endpoint_executar(payload: ComandoPayload):
     """Executa uma ação no PC se o token estiver correto."""
     resultado = executar_acao(payload.comando)
     if resultado["status"] == "erro":
-        falar_no_mini("Não consegui abrir")
         raise HTTPException(status_code=400, detail=resultado["mensagem"])
-    falar_no_mini("Abrindo")
     return resultado
 
 
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("main:app", host=settings.host, port=settings.port, reload=True)
+    uvicorn.run("main:app", host=settings.host, port=settings.port, reload=False)
